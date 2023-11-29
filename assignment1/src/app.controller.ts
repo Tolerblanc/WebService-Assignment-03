@@ -8,7 +8,7 @@ export class AppController {
     constructor(private readonly appService: AppService) {}
 
     @Get()
-    getHello(): string {
+    getHome(): string {
         return fs.readFileSync(join(__dirname, '..', 'public', 'home.html'), 'utf8');
     }
 

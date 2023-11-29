@@ -3,11 +3,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
-            isGlobal: true, // 전체적으로 사용하기 위해
+            isGlobal: true,
             envFilePath: `.env`,
         }),
         TypeOrmModule.forRoot({
@@ -19,6 +21,9 @@ import { ConfigModule } from '@nestjs/config';
             database: process.env.DB_NAME,
             entities: [],
             synchronize: true,
+        }),
+        ServeStaticModule.forRoot({
+            rootPath: join(__dirname, '..', 'public'),
         }),
     ],
     controllers: [AppController],

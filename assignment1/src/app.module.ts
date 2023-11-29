@@ -5,8 +5,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { UserController } from './user/user.controller';
 import { UserModule } from './user/user.module';
+import { User } from './user/user.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
     imports: [
@@ -21,7 +22,7 @@ import { UserModule } from './user/user.module';
             username: process.env.MYSQL_USER_ID,
             password: process.env.MYSQL_PASSWORD,
             database: process.env.DB_NAME,
-            entities: [],
+            entities: [User],
             synchronize: true,
         }),
         ServeStaticModule.forRoot({
@@ -29,8 +30,9 @@ import { UserModule } from './user/user.module';
             renderPath: undefined,
         }),
         UserModule,
+        AuthModule,
     ],
-    controllers: [AppController, UserController],
+    controllers: [AppController],
     providers: [AppService],
 })
 export class AppModule {}

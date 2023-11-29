@@ -5,6 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { UserController } from './user/user.controller';
+import { UserModule } from './user/user.module';
 
 @Module({
     imports: [
@@ -26,8 +28,9 @@ import { join } from 'path';
             rootPath: join(__dirname, '..', 'public'),
             renderPath: undefined,
         }),
+        UserModule,
     ],
-    controllers: [AppController],
+    controllers: [AppController, UserController],
     providers: [AppService],
 })
 export class AppModule {}

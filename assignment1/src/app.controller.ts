@@ -1,7 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { join } from 'path';
-import * as fs from 'fs';
 
 @Controller()
 export class AppController {
@@ -9,16 +7,16 @@ export class AppController {
 
     @Get()
     getHome(): string {
-        return fs.readFileSync(join(__dirname, '..', 'public', 'home.html'), 'utf8');
+        return this.appService.getFileStreamHome();
     }
 
     @Get('login')
     getLogin(): string {
-        return fs.readFileSync(join(__dirname, '..', 'public', 'login.html'), 'utf8');
+        return this.appService.getFileStreamLogin();
     }
 
     @Get('register')
     getRegister(): string {
-        return fs.readFileSync(join(__dirname, '..', 'public', 'register.html'), 'utf8');
+        return this.appService.getFileStreamRegister();
     }
 }

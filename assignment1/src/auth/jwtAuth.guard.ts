@@ -7,6 +7,7 @@ export class JwtAuthGuard implements CanActivate {
     constructor(private jwtService: JwtService) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
+        this.logger.log('canActivate() called');
         const request = context.switchToHttp().getRequest();
         const token = this.extractTokenFromHeader(request);
         if (!token) throw new UnauthorizedException('no token');
@@ -24,7 +25,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     private extractTokenFromHeader(request: Request): string | undefined {
-        const [type, token] = request.headers.get('authorization')?.split(' ') ?? [];
-        return type === 'Bearer' ? token : undefined;
+        const token = request.headers['cookie']?.split('=')[1];
+        return token ? token : undefined;
     }
 }

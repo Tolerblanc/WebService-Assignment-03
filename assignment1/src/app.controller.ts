@@ -1,5 +1,6 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Logger, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
+import { JwtAuthGuard } from './auth/jwtAuth.guard';
 
 @Controller()
 export class AppController {
@@ -7,6 +8,7 @@ export class AppController {
     constructor(private readonly appService: AppService) {}
 
     @Get()
+    @UseGuards(JwtAuthGuard)
     getHome(): string {
         this.logger.log('endpoint / called');
         return this.appService.getFileStreamHome();
@@ -18,9 +20,9 @@ export class AppController {
         return this.appService.getFileStreamLogin();
     }
 
-    @Get('register')
+    @Get('join')
     getRegister(): string {
-        this.logger.log('endpoint /register called');
+        this.logger.log('endpoint /join called');
         return this.appService.getFileStreamRegister();
     }
 }

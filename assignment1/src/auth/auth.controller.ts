@@ -15,10 +15,15 @@ export class AuthController {
     @Post('login')
     async login(@Body() loginDto: LoginDto, @Res() res): Promise<void> {
         this.logger.log('endpoint /auth/login called');
-        const isSuccess: boolean = await this.authService.login(loginDto);
-        if (isSuccess) {
+        try {
+            const newJwt: string = await this.authService.login(loginDto);
+            if (loginDto.isSession !== undefined) {
+                res.cookie('access_token', newJwt, { expires: 0 });
+            } else {
+                res.cookie('access_token', newJwt, { expires: process.env.JWT_ACCESS_EXPIRATION_TIME });
+            }
             res.redirect('/');
-        } else {
+        } catch (e) {
             res.status(401).send('Login failed');
         }
     }

@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './login.dto';
+import { User } from 'src/user/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -12,17 +13,20 @@ export class AuthService {
         private userService: UserService,
     ) {}
 
-    async login(loginDto: LoginDto): Promise<boolean> {
+    async login(loginDto: LoginDto): Promise<string> {
         this.logger.log('login() called');
-        console.log(loginDto);
-        return false;
+        this.validateUser(loginDto.id, loginDto.password);
+        const payload = { id: loginDto.id };
+        const newJwt: string = this.jwtService.sign(payload);
+        return newJwt;
     }
 
-    async validateUser(id: string, password: string): Promise<any> {
+    async validateUser(id: string, password: string): Promise<void> {
         this.logger.log('validateUser() called');
-        const user = await this.userService.findUserById(id);
+        const user: User = await this.userService.findUserById(id);
         if (bcrypt.compare(password, user.password)) {
+            return;
         }
-        return null;
+        throw new Error('password is invalid');
     }
 }

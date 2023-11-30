@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Registration Form</title>
+        <script>
+            let isPasswordValid = false;
+            let isIdUnique = false;
+
+            function checkPassword() {
+                let password = document.getElementById('pw1').value;
+                let confirmPassword = document.getElementById('pw2').value;
+                let passwordCondition = /^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{4,}$/; // 영문, 숫자 조합, 4자 이상
+
+                if (password.match(passwordCondition) && password === confirmPassword) {
+                    document.getElementById('passwordMatch').innerHTML = '비밀번호 일치';
+                    document.getElementById('submitBtn').disabled = false;
+                } else {
+                    document.getElementById('passwordMatch').innerHTML = '비밀번호 불일치 또는 조건 미충족 (영문 숫자 조합, 4자 이상)';
+                    document.getElementById('submitBtn').disabled = true;
+                }
+            }
+
+            function checkDuplication() {
+                const userId = document.getElementById('id').value;
+
+                fetch('/auth/checkDuplication', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: userId }),
+                })
+                    .then((response) => {
+                        if (response.ok) {
+                            return response.text();
+                        } else if (response.status === 409) {
+                            throw new Error('이미 사용 중인 ID입니다.');
+                        } else {
+                            throw new Error('서버 오류가 발생했습니다.');
+                        }
+                    })
+                    .then((data) => {
+                        alert('사용 가능한 ID입니다.');
+                        isIdUnique = true;
+                        document.getElementById('id').disabled = true; // ID 입력 필드 비활성화
+                        updateSubmitButtonStatus();
+                    })
+                    .catch((error) => {
+                        alert(error.message);
+                        isIdUnique = false;
+                        updateSubmitButtonStatus();
+                    });
+            }
+
+            function submitForm() {
+                console.log('submitForm start');
+                const userId = document.getElementById('id').value;
+                const password = document.getElementById('pw1').value;
+                console.log(userId + password);
+                fetch('/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: userId, password: password }),
+                })
+                    .then((response) => {
+                        alert(response.status);
+                        if (response.ok) {
+                            return response.text();
+                        } else if (response.status === 409) {
+                            throw new Error('이미 사용 중인 ID입니다.');
+                        } else {
+                            throw new Error('서버 오류가 발생했습니다.');
+                        }
+                    })
+                    .then((data) => {
+                        alert('회원가입에 성공했습니다.');
+                        window.location.href = '/login';
+                    })
+                    .catch((error) => {
+                        alert(`${error}`);
+                        window.location.href = '/join';
+                    });
+                console.log('submitForm end');
+            }
+
+            function updateSubmitButtonStatus() {
+                document.getElementById('submitBtn').disabled = !(isPasswordValid && isIdUnique);
+            }
+
+            window.onload = function () {
+                document.getElementById('pw1').onkeyup = checkPassword;
+                document.getElementById('pw2').onkeyup = checkPassword;
+            };
+        </script>
+    </head>
+    <body>
+        <form id="registrationForm">
+            <label for="id">ID:</label><br />
+            <input type="text" id="id" name="id" /><br />
+            <button type="button" onclick="checkDuplication()">중복 확인</button><br />
+
+            <label for="pw1">비밀번호1:</label><br />
+            <input type="password" id="pw1" name="pw1" onkeyup="checkPassword()" /><br />
+
+            <label for="pw2">비밀번호2:</label><br />
+            <input type="password" id="pw2" name="pw2" onkeyup="checkPassword()" /><br />
+            <span id="passwordMatch"></span><br />
+
+            <button type="button" id="submitBtn" onclick="submitForm()" disabled>제출</button>
+        </form>
+    </body>
+</html>

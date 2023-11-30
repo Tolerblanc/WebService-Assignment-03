@@ -1,4 +1,4 @@
-import { Body, Controller, Logger, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Logger, Post, Res } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { LoginDto } from './login.dto';
@@ -18,12 +18,13 @@ export class AuthController {
         try {
             const newJwt: string = await this.authService.login(loginDto);
             if (loginDto.isSession !== undefined) {
-                res.cookie('access_token', newJwt, { expires: 0 });
+                res.cookie('access_token', newJwt);
             } else {
-                res.cookie('access_token', newJwt, { expires: process.env.JWT_ACCESS_EXPIRATION_TIME });
+                res.cookie('access_token', newJwt, { maxAge: 60 * 60 * 24 * 1000 });
             }
             res.redirect('/');
         } catch (e) {
+            this.logger.debug(e);
             res.status(401).send('Login failed');
         }
     }
@@ -32,8 +33,9 @@ export class AuthController {
     async register(@Body() registerDto: RegisterDto, @Res() res) {
         this.logger.log('endpoint /auth/register called');
         try {
-            await this.userService.registerUser(registerDto);
-            res.status(200).redirect('/');
+            const newUser = await this.userService.registerUser(registerDto);
+            this.logger.log('newUser: ' + newUser.userId);
+            res.status(200).send('Register success');
         } catch (e) {
             res.status(409).send('User already exists');
         }
@@ -44,9 +46,9 @@ export class AuthController {
         this.logger.log('endpoint /auth/checkDuplication called');
         try {
             await this.userService.findUserById(id);
-            res.status(409).send('User already exists');
+            res.status(409).send('사용할 수 없음');
         } catch (e) {
-            res.status(200).send('User does not exist');
+            res.status(200).send('사용가능');
         }
     }
 }

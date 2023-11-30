@@ -15,17 +15,27 @@ export class AuthService {
 
     async login(loginDto: LoginDto): Promise<string> {
         this.logger.log('login() called');
-        this.validateUser(loginDto.id, loginDto.password);
+        try {
+            await this.validateUser(loginDto.id, loginDto.password);
+        } catch (e) {
+            throw e;
+        }
         const payload = { id: loginDto.id };
-        const newJwt: string = this.jwtService.sign(payload);
+        const newJwt: string = this.jwtService.sign(payload, {
+            secret: process.env.JWT_SECRET_KEY,
+        });
         return newJwt;
     }
 
     async validateUser(id: string, password: string): Promise<void> {
         this.logger.log('validateUser() called');
-        const user: User = await this.userService.findUserById(id);
-        if (bcrypt.compare(password, user.password)) {
-            return;
+        try {
+            const user: User = await this.userService.findUserById(id);
+            if ((await bcrypt.compare(password, user.password)) === true) {
+                return;
+            }
+        } catch (e) {
+            throw e;
         }
         throw new Error('password is invalid');
     }

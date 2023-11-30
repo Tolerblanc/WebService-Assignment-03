@@ -1,3 +1,4 @@
+import { Length } from 'class-validator';
 import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
 @Entity({ name: 'user', schema: 'public' })
@@ -7,8 +8,10 @@ export class User {
     id: number;
 
     @Column()
+    @Length(4, 20)
     userId: string;
 
     @Column()
+    @Length(4, 20)
     password: string;
 }

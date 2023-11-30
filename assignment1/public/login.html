@@ -4,12 +4,15 @@
         <title>Login Test</title>
     </head>
     <body>
+        <h2>2019204054 김현준</h2>
         <h2>Login Form</h2>
-        <form action="/login" method="post">
-            <label for="username">Username:</label>
+        <form action="/auth/login" method="post">
+            <label for="id">아이디:</label>
             <input type="text" id="username" name="username" /><br /><br />
-            <label for="password">Password:</label>
+            <label for="password">비밀번호:</label>
             <input type="password" id="password" name="password" /><br /><br />
+            <label for="isSession">로그인 유지하기</label>
+            <input type="checkbox" id="isSession" name="isSession" /><br /><br />
             <input type="submit" value="Submit" />
         </form>
     </body>

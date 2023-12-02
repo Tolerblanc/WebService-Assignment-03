@@ -7,7 +7,7 @@
                 document.getElementById('loginForm').addEventListener('submit', function (event) {
                     event.preventDefault(); // 폼의 기본 제출 동작을 중단
 
-                    const username = document.getElementById('username').value;
+                    const id = document.getElementById('id').value;
                     const password = document.getElementById('password').value;
                     const isSession = document.getElementById('isSession').checked;
 
@@ -17,7 +17,7 @@
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            username: username,
+                            id: id,
                             password: password,
                             isSession: isSession,
                         }),
@@ -43,8 +43,8 @@
         <h2>2019204054 김현준</h2>
         <h2>Login Form</h2>
         <form id="loginForm" action="/auth/login" method="post">
-            <label for="username">아이디:</label>
-            <input type="text" id="username" name="username" /><br /><br />
+            <label for="id">아이디:</label>
+            <input type="text" id="id" name="id" /><br /><br />
             <label for="password">비밀번호:</label>
             <input type="password" id="password" name="password" /><br /><br />
             <label for="isSession">로그인 유지하기</label>

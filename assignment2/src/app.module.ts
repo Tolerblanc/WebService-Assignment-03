@@ -8,6 +8,7 @@ import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { User } from './user/user.entity';
 import { AuthModule } from './auth/auth.module';
+import { SocketModule } from './socket/socket.module';
 
 @Module({
     imports: [
@@ -31,6 +32,7 @@ import { AuthModule } from './auth/auth.module';
         }),
         UserModule,
         AuthModule,
+        SocketModule,
     ],
     controllers: [AppController],
     providers: [AppService],

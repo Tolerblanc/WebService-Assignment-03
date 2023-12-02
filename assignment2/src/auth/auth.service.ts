@@ -20,7 +20,7 @@ export class AuthService {
         } catch (e) {
             throw e;
         }
-        const payload = { id: loginDto.id };
+        const payload = { userId: loginDto.id };
         const newJwt: string = this.jwtService.sign(payload, {
             secret: process.env.JWT_SECRET_KEY,
         });

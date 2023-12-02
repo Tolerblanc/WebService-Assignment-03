@@ -4,6 +4,7 @@ import { User } from './user.entity';
 import { UserRepository } from './user.repository';
 import { RegisterDto } from 'src/auth/register.dto';
 import * as bcrypt from 'bcrypt';
+import { RecordDto } from './record.dto';
 
 @Injectable()
 export class UserService {
@@ -34,5 +35,15 @@ export class UserService {
             if (error.code === '23505') throw new ConflictException('Existing userName');
             else throw new InternalServerErrorException('from registerUser');
         }
+    }
+
+    async getRecords(userId: string): Promise<RecordDto> {
+        const user: User = await this.findUserById(userId);
+        const record: RecordDto = {
+            id: user.userId,
+            wins: user.wins,
+            losses: user.losses,
+        };
+        return record;
     }
 }

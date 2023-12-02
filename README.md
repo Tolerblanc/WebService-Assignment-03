@@ -1,27 +1,22 @@
-# 2023-2-WebService-Assignment
+# 2023-2-WebService-Assignment 2
 
 ## TODO
 
--   로그인 API 구현
-    -   넘겨 받은 값 유효성 검사
-    -   정상 로그인 시 체크 박스에 따라 Jwt를 세션 쿠키 or 일반 쿠키에 담아 전달 후 홈으로 리다이렉션
-    -   로그인 실패 시 에러
--   로그인 프론트엔드 구현
-    v- 상단에 학번 이름
-    v- ID/PW 입력 폼, 체크 박스, 제출 버튼
-    v- 로그인 API 호출
--   회원가입 API 구현
-    -   넘겨 받은 값 유효성 검사
-        v- 정상 회원 가입 시 DB 추가 후 홈 리다이렉션
-        v- DB 추가 실패 시 예외처리
--   ID 중복 확인 API 구현
-    v- DB 뒤져서 이미 있는 ID인지 체크 후 반환
--   회원가입 프론트엔드 구현
-    -   ID/PW1/PW2 입력 폼, ID 중복 확인, 제출 버튼
-    -   ID 중복확인 안하면 제출 불가
-    -   PW1/PW2는 입력할 때마다 같은지 체크하고, 같을때만 제출 가능
-    -   영어 + 숫자 4자리 이상
-    -   회원가입 API 호출
--   Jwt 가드 구현 -> 홈 가드
-    -   Jwt가 없다면 로그인 강제 리다이렉션
-    -   Jwt 있으면 환영합니다 출력
+-   GET /users/records : JWT 토큰으로 전적 조회하는 API
+-   gameResult.html : 승패 결과에 따라 다른 화면 출력
+-   gameRoom.html : 게임 방 출력 (대기 + 게임 진행)
+
+## Server-side emit events
+
+-   updateRoomList : 방 리스트 업데이트 시
+-   startGame : 4명이 모두 준비 완료되었을 때 게임 시작
+-   endGame : 병뚜껑 체력이 0일 때 게임 종료 (기록 갱신 후 승자, 패자 페이지로 이동)
+-   updateGameState : 게임 상태 변경 (병뚜껑 체력 갱신 후 턴 변경 + 가장 높은 hit 출력)
+
+## Client-side emit events
+
+-   createRoom : 방을 생성할 시
+-   joinRoom : 방을 클릭해서 들어갈 시
+-   leaveRoom : 방을 나오거나 방에 들어간 채로 접속이 끊길 시
+-   changeReadyStatus : 준비 상태 변경
+-   updateGameState : 게임 상태 변경 (현재 플레이어의 hit)

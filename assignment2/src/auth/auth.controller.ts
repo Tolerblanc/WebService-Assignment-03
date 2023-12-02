@@ -3,6 +3,7 @@ import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { LoginDto } from './login.dto';
 import { RegisterDto } from './register.dto';
+import { log } from 'console';
 
 @Controller('auth')
 export class AuthController {
@@ -17,7 +18,8 @@ export class AuthController {
         this.logger.log('endpoint /auth/login called');
         try {
             const newJwt: string = await this.authService.login(loginDto);
-            if (loginDto.isSession !== undefined) {
+            this.logger.debug(loginDto.isSession);
+            if (loginDto.isSession === true) {
                 res.cookie('access_token', newJwt);
             } else {
                 res.cookie('access_token', newJwt, { maxAge: 60 * 60 * 24 * 1000 });

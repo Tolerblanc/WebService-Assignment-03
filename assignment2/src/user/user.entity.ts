@@ -14,4 +14,10 @@ export class User {
     @Column()
     @Length(4, 20)
     password: string;
+
+    @Column({ default: 0 })
+    wins: number;
+
+    @Column({ default: 0 })
+    losses: number;
 }

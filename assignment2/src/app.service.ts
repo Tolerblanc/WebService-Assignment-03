@@ -19,4 +19,9 @@ export class AppService {
         this.logger.log('getFileStreamRegister called');
         return fs.readFileSync(join(__dirname, '..', 'public', 'register.html'), 'utf8');
     }
+
+    getFileStreamRecord(): string {
+        this.logger.log('getFileStreamRegister called');
+        return fs.readFileSync(join(__dirname, '..', 'public', 'record.html'), 'utf8');
+    }
 }

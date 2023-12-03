@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Record</title>
+        <script>
+            fetch('/user/records', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(async (response) => {
+                    if (!response.ok) {
+                        throw new Error('HTTP error, status = ' + response.status);
+                    }
+                    let json = await response.json();
+                    const id = json['id'];
+                    const wins = json['wins'];
+                    const losses = json['losses'];
+                    const winRate = wins + losses ? eval((wins / (wins + losses)) * 100).toFixed(2) : 0;
+
+                    document.getElementById('record').innerHTML =
+                        id + '님의 전적 <br>Wins: ' + wins + '<br>Losses: ' + losses + '<br>Win Rate: ' + winRate + '%';
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+        </script>
+    </head>
+    <body>
+        <h1>Record</h1>
+        <p id="record"></p>
+    </body>
+</html>

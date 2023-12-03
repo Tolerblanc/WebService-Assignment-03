@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, UseGuards } from '@nestjs/common';
+import { Controller, Get, Logger, Req, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { JwtAuthGuard } from './auth/jwtAuth.guard';
 
@@ -9,7 +9,7 @@ export class AppController {
 
     @Get()
     @UseGuards(JwtAuthGuard)
-    getHome(): string {
+    getHome(@Req() req): string {
         this.logger.log('endpoint / called');
         return this.appService.getFileStreamHome();
     }
@@ -24,5 +24,12 @@ export class AppController {
     getRegister(): string {
         this.logger.log('endpoint /join called');
         return this.appService.getFileStreamRegister();
+    }
+
+    @Get('record')
+    @UseGuards(JwtAuthGuard)
+    getRecord(): string {
+        this.logger.log('endpoint /record called');
+        return this.appService.getFileStreamRecord();
     }
 }

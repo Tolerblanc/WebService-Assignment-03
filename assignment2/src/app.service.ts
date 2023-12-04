@@ -7,7 +7,7 @@ export class AppService {
 
     getFileStreamHome(): string {
         this.logger.log('getFileStreamHome called');
-        return fs.readFileSync(join(__dirname, '..', 'public', 'home.html'), 'utf8');
+        return fs.readFileSync(join(__dirname, '..', 'public', 'index.html'), 'utf8');
     }
 
     getFileStreamLogin(): string {

@@ -21,7 +21,13 @@ class Home {
     initializeSocketListeners() {
         socket.off('updateRoomList');
         socket.on('updateRoomList', (rooms) => {
+            console.log('updateRoomList listened');
             this.updateRoomList(rooms);
+        });
+
+        socket.off('eventFailure');
+        socket.on('eventFailure', (message) => {
+            alert(message);
         });
     }
 
@@ -39,21 +45,28 @@ class Home {
     }
 
     updateRoomList(rooms) {
-        console.log(rooms);
         const roomList = document.getElementById('roomList');
         roomList.innerHTML = ''; // 목록 초기화
 
-        rooms.forEach((room) => {
-            const li = document.createElement('li');
-            li.textContent = `${room.name} (${room.currentCount} / 4)`;
-            li.onclick = () => this.enterRoom(room.name); // 방 입장 이벤트 처리
+        let roomMap = new Map(JSON.parse(rooms));
+        if (roomMap.length === 0) {
+            return;
+        }
+        roomMap?.forEach((count, roomName) => {
+            if (count === null || count == 0 || count >= 4) {
+                return;
+            }
+            const li = document.createElement('button');
+            li.textContent = `${roomName} (${count} / 4)`;
+            li.onclick = () => this.enterRoom(roomName); // 방 입장 이벤트 처리
             roomList.appendChild(li);
+            roomList.appendChild(document.createElement('br'));
         });
     }
 
     enterRoom(roomName) {
-        socket.emit('joinRoom', roomName);
         changeUrl('/room');
+        socket.emit('joinRoom', roomName);
     }
 
     template() {

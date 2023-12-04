@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
-import { OnGatewayConnection, SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
+import { OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { SocketService } from './socket.service';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
@@ -16,6 +16,9 @@ export class SocketGateway implements OnGatewayConnection {
         private jwtService: JwtService,
     ) {}
 
+    @WebSocketServer()
+    public server: Server;
+
     handleConnection(client: Socket) {
         try {
             const tokenString: string = client.request.headers.cookie?.split('=')[1] as string;
@@ -23,6 +26,7 @@ export class SocketGateway implements OnGatewayConnection {
                 secret: process.env.JWT_SECRET_KEY,
             });
             this.socketService.addClient(client, decodedToken.userId);
+            client.emit('updateRoomList', this.socketService.getRooms(this.server));
         } catch (e) {
             this.logger.error(e);
             client.disconnect(true);
@@ -31,11 +35,8 @@ export class SocketGateway implements OnGatewayConnection {
 
         client.on('disconnecting', (reason) => {
             try {
-                const tokenString: string = client.request.headers.cookie?.split('=')[1] as string;
-                const decodedToken = this.jwtService.verify(tokenString, {
-                    secret: process.env.JWT_SECRET_KEY,
-                });
-                this.socketService.deleteClient(client, decodedToken.userId);
+                this.socketService.deleteClient(client);
+                this.logger.log(`Client disconnected: ${client.id}`);
             } catch (e) {
                 this.logger.error(e);
             }
@@ -43,32 +44,39 @@ export class SocketGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('createRoom')
-    async createRoom(client: Socket, payload: JSON): Promise<void> {
+    createRoom(client: Socket, roomName: string): void {
         this.logger.log(`Client ${client.id} called createRoom()`);
         try {
-            // await this.socketService.createRoom(client, payload['roomName']);
+            const uniqueRoomName: string = roomName + ' by ' + client.id;
+            this.socketService.createRoom(this.server, client, uniqueRoomName);
+            this.server.emit('updateRoomList', this.socketService.getRooms(this.server));
         } catch (e) {
             this.logger.error(e);
+            client.emit('eventFailure', e.message);
         }
     }
 
     @SubscribeMessage('joinRoom')
-    async joinRoom(client: Socket, payload: JSON): Promise<void> {
+    joinRoom(client: Socket, roomName: string): void {
         this.logger.log(`Client ${client.id} called joinRoom()`);
         try {
-            // await this.socketService.joinRoom(client, payload);
+            this.socketService.joinRoom(this.server, client, roomName);
+            this.server.emit('updateRoomList', this.socketService.getRooms(this.server));
         } catch (e) {
             this.logger.error(e);
+            client.emit('eventFailure', e.message);
         }
     }
 
     @SubscribeMessage('leaveRoom')
-    async leaveRoom(client: Socket, payload: JSON): Promise<void> {
+    async leaveRoom(client: Socket, roomName: string): Promise<void> {
         this.logger.log(`Client ${client.id} called leaveRoom()`);
         try {
-            // await this.socketService.leaveRoom(client, payload);
+            this.socketService.leaveRoom(client, roomName);
+            this.server.emit('updateRoomList', this.socketService.getRooms(this.server));
         } catch (e) {
             this.logger.error(e);
+            client.emit('eventFailure', e.message);
         }
     }
 
@@ -76,7 +84,7 @@ export class SocketGateway implements OnGatewayConnection {
     async changeReadyStatus(client: Socket, payload: JSON): Promise<void> {
         this.logger.log(`Client ${client.id} called changeReadyStatus()`);
         try {
-            // await this.socketService.changeReadyStatus(client, payload);
+            // this.socketService.changeReadyStatus(client, payload);
         } catch (e) {
             this.logger.error(e);
         }

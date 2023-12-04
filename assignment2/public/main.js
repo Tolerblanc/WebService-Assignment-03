@@ -34,6 +34,8 @@ export const changeUrl = (requestedUrl) => {
         routes['/record'].updateRecord();
     } else if (requestedUrl === '/') {
         routes['/'].initializeSocketListeners();
+    } else if (requestedUrl === '/room') {
+        routes['/room'].initializeSocketListeners();
     }
 };
 
@@ -46,5 +48,20 @@ window.addEventListener('click', (e) => {
 });
 
 window.addEventListener('popstate', () => {
+    const currentPath = window.location.pathname;
+    console.log('현재 페이지:', currentPath);
+
+    // /room 페이지를 벗어났는지 확인
+    if (!currentPath.startsWith('/room')) {
+        routes['/room'].leaveRoom();
+    }
+    changeUrl(currentPath);
+});
+
+window.addEventListener('beforeunload', () => {
+    if (window.location.pathname.startsWith('/room')) {
+        // /room 페이지를 벗어날 때 필요한 작업
+        routes['/room'].leaveRoom();
+    }
     changeUrl(window.location.pathname);
 });

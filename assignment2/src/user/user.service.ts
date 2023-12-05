@@ -46,4 +46,14 @@ export class UserService {
         };
         return record;
     }
+
+    async updateRecord(userId: string, isWin: boolean): Promise<void> {
+        const user: User = await this.findUserById(userId);
+        if (isWin) {
+            user.wins += 1;
+        } else {
+            user.losses += 1;
+        }
+        await this.userRepository.save(user);
+    }
 }

@@ -4,11 +4,6 @@ export interface Game {
     targetHP: number;
     maxHit: number;
     maxHitPlayer: string;
-}
-
-export interface GameDto {
-    currentPlayer: string;
-    targetHP: number;
-    maxHit: number;
-    maxHitPlayer: string;
+    lastHit: 0;
+    lastHitPlayer: '';
 }

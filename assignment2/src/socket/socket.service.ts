@@ -1,13 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { Game } from './game.interface';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class SocketService {
     private readonly logger = new Logger(SocketService.name);
     private clients: Map<string, string> = new Map<string, string>(); // socket.id: userId
-    private isReady: Map<string, boolean> = new Map<string, boolean>(); // socketId: boolean
+    private isReady: Set<string> = new Set<string>(); // socket.id
     private game: Map<string, Game> = new Map<string, Game>(); // roomName: Game
+
+    constructor(private userService: UserService) {}
 
     addClient(client: Socket, userId: string) {
         this.clients.set(client.id, userId);
@@ -40,9 +43,11 @@ export class SocketService {
     getRoomInfo(server: Server, roomName: string) {
         const room = server.sockets.adapter.rooms.get(roomName);
         const players = Array.from(room).map((socketId) => this.clients.get(socketId));
+        const readyStatus = Array.from(room).map((socketId) => this.isReady.has(socketId));
         return {
             roomName: roomName,
             players: players,
+            readyStatus: readyStatus,
         };
     }
 
@@ -58,13 +63,72 @@ export class SocketService {
     leaveRoom(client: Socket, roomName: string) {
         client.leave(roomName);
     }
-}
 
-// const game = this.game.get(roomName);
-//         return {
-//             players,
-//             turn: game.turn,
-//             targetHP: game.targetHP,
-//             maxHit: game.maxHit,
-//             maxHitPlayer: game.maxHitPlayer,
-//         };
+    changeReadyStatus(server: Server, client: Socket, roomName: string) {
+        this.isReady.add(client.id);
+        const players = server.sockets.adapter.rooms.get(roomName);
+        server.to(roomName).emit('updateRoomStatus', this.getRoomInfo(server, roomName));
+        if (players.size < 2) return; // TODO: 4명이 안되면 게임 시작 불가토록 수정 필요
+        for (const socketId of players) {
+            if (!this.isReady.has(socketId)) return;
+        }
+        for (const socketId of players) {
+            this.isReady.delete(socketId);
+        }
+        this.startGame(server, roomName);
+    }
+
+    startGame(server: Server, roomName: string) {
+        this.logger.log(`Game started in ${roomName}`);
+        const room = server.sockets.adapter.rooms.get(roomName);
+        const players = Array.from(room).map((socketId) => this.clients.get(socketId));
+        players.sort(() => Math.random() - 0.5); // 플레이어 순서 셔플
+        const game: Game = {
+            players: players,
+            turn: 0,
+            targetHP: 100,
+            maxHit: 0,
+            maxHitPlayer: '',
+            lastHit: 0,
+            lastHitPlayer: '',
+        };
+        this.game.set(roomName, game);
+        server.to(roomName).emit('startGame', game);
+        server.to(roomName).emit('updateGameState', game);
+    }
+
+    async updateGameState(server: Server, client: Socket, payload: JSON) {
+        // payload: { currentPlayer: string, roomName: string, hit: number } hit 0~100
+        const currGame = this.game.get(payload['roomName']);
+        if (currGame === undefined) throw new Error('게임을 찾을 수 없습니다.');
+        if (currGame.maxHit < payload['hit']) {
+            currGame.maxHit = payload['hit'];
+            currGame.maxHitPlayer = payload['currentPlayer'];
+        }
+        if (currGame.targetHP <= payload['hit']) {
+            await this.endGame(server, payload['currentPlayer'], payload['roomName']);
+            return;
+        }
+        currGame.turn = (currGame.turn + 1) % 2; // TODO : 4명으로 수정 필요
+        currGame.targetHP -= payload['hit'];
+        currGame.lastHit = payload['hit'];
+        currGame.lastHitPlayer = payload['currentPlayer'];
+        this.game.set(payload['roomName'], currGame);
+        server.to(payload['roomName']).emit('updateGameState', currGame);
+    }
+
+    async endGame(server: Server, winner: string, roomName: string) {
+        const currGame = this.game.get(roomName);
+        for (const player of currGame.players) {
+            if (player === winner) await this.userService.updateRecord(player, true);
+            else await this.userService.updateRecord(player, false);
+        }
+        const gameResult = {
+            winner: winner,
+            maxHit: currGame.maxHit,
+            maxHitPlayer: currGame.maxHitPlayer,
+        };
+        server.to(roomName).emit('endGame', gameResult);
+        server.to(roomName).emit('updateRoomStatus', this.getRoomInfo(server, roomName));
+    }
+}

@@ -228,6 +228,22 @@ class Room {
 
     template() {
         return `
+        <style>
+        .player {
+            margin-bottom: 10px;
+        }
+        
+        .video-container {
+            width: 160px;
+            height: 120px;
+            background-color: #000;
+        }
+        
+        video {
+            width: 100%;
+            height: auto;
+        }
+        </style>
         <h2 id="roomName">Room</h1>
         <!-- 게임 영역 -->
         <div class="game-area">
@@ -237,10 +253,26 @@ class Room {
         <!-- 플레이어 정보 영역 -->
         <div id="players">
         <!-- 각 플레이어 정보가 들어갈 칸 -->
-        <div class="player" id="player1"><span class="playerName"><!-- 플레이어 1의 이름 --></span> <span class="playerStatus"><!-- 준비 상태 --></span></div>
-        <div class="player" id="player2"><span class="playerName"><!-- 플레이어 2의 이름 --></span> <span class="playerStatus"><!-- 준비 상태 --></span></div>
-        <div class="player" id="player3"><span class="playerName"><!-- 플레이어 3의 이름 --></span> <span class="playerStatus"><!-- 준비 상태 --></span></div>
-        <div class="player" id="player4"><span class="playerName"><!-- 플레이어 4의 이름 --></span> <span class="playerStatus"><!-- 준비 상태 --></span></div>
+        <div class="player" id="player1">
+        <span class="playerName"><!-- 플레이어 1의 이름 --></span> 
+        <span class="playerStatus"><!-- 준비 상태 --></span>
+        <div class="video-container" id="video1"><!-- 플레이어 1의 비디오 스트림 --></div>
+        </div>
+        <div class="player" id="player2">
+        <span class="playerName"><!-- 플레이어 2의 이름 --></span> 
+        <span class="playerStatus"><!-- 준비 상태 --></span>
+        <div class="video-container" id="video2"><!-- 플레이어 2의 비디오 스트림 --></div>
+        </div>
+        <div class="player" id="player3">
+        <span class="playerName"><!-- 플레이어 3의 이름 --></span> 
+        <span class="playerStatus"><!-- 준비 상태 --></span>
+        <div class="video-container" id="video3"><!-- 플레이어 3의 비디오 스트림 --></div>
+        </div>
+        <div class="player" id="player4">
+        <span class="playerName"><!-- 플레이어 4의 이름 --></span> 
+        <span class="playerStatus"><!-- 준비 상태 --></span>
+        <div class="video-container" id="video4"><!-- 플레이어 4의 비디오 스트림 --></div>
+        </div>
     </div>
 
     <!-- 자신의 준비 버튼 -->

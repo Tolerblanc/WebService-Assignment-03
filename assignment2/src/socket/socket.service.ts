@@ -68,7 +68,7 @@ export class SocketService {
         this.isReady.add(client.id);
         const players = server.sockets.adapter.rooms.get(roomName);
         server.to(roomName).emit('updateRoomStatus', this.getRoomInfo(server, roomName));
-        if (players.size < 2) return; // TODO: 4명이 안되면 게임 시작 불가토록 수정 필요
+        if (players.size < 4) return; // TODO: 4명이 안되면 게임 시작 불가토록 수정 필요
         for (const socketId of players) {
             if (!this.isReady.has(socketId)) return;
         }
@@ -109,7 +109,7 @@ export class SocketService {
             await this.endGame(server, payload['currentPlayer'], payload['roomName']);
             return;
         }
-        currGame.turn = (currGame.turn + 1) % 2; // TODO : 4명으로 수정 필요
+        currGame.turn = (currGame.turn + 1) % 4; // TODO : 4명으로 수정 필요
         currGame.targetHP -= payload['hit'];
         currGame.lastHit = payload['hit'];
         currGame.lastHitPlayer = payload['currentPlayer'];

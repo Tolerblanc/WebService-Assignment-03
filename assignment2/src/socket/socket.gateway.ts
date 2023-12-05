@@ -81,10 +81,10 @@ export class SocketGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('changeReadyStatus')
-    async changeReadyStatus(client: Socket, payload: JSON): Promise<void> {
+    changeReadyStatus(client: Socket, roomName: string): void {
         this.logger.log(`Client ${client.id} called changeReadyStatus()`);
         try {
-            // this.socketService.changeReadyStatus(client, payload);
+            this.socketService.changeReadyStatus(this.server, client, roomName);
         } catch (e) {
             this.logger.error(e);
         }
@@ -94,7 +94,7 @@ export class SocketGateway implements OnGatewayConnection {
     async updateGameState(client: Socket, payload: JSON): Promise<void> {
         this.logger.log(`Client ${client.id} called updateGameState()`);
         try {
-            // await this.socketService.updateGameState(client, payload);
+            await this.socketService.updateGameState(this.server, client, payload);
         } catch (e) {
             this.logger.error(e);
         }

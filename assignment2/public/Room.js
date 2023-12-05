@@ -1,4 +1,4 @@
-import { socket } from './main.js';
+import { socket, changeUrl } from './main.js';
 import { moveSlider, changeSpeed, speed, direction } from './Slider.js';
 // export interface Game {
 //     players: string[];
@@ -16,6 +16,7 @@ class Room {
         this.userName = '';
         this.sliderIntervalId = null;
         this.speedIntervalId = null;
+        this.turnTimerId = null;
         this.initializeEventListeners();
     }
 
@@ -64,6 +65,11 @@ class Room {
     updateRoomStatus(roomInfo) {
         this.roomName = roomInfo.roomName;
         document.getElementById('roomName').textContent = `Room : ${this.roomName}`;
+        for (let index = 1; index <= 4; index++) {
+            const playerElement = document.getElementById(`player${index}`);
+            playerElement.querySelector('.playerName').textContent = '';
+            playerElement.querySelector('.playerStatus').textContent = '';
+        }
         roomInfo.players.forEach((player, index) => {
             const playerElement = document.getElementById(`player${index + 1}`);
             playerElement.querySelector('.playerName').textContent = player;
@@ -103,10 +109,16 @@ class Room {
         <div id = "result"> </div>
         <div id = "maxHit"> 최대 데미지 : ${gameResult.maxHit} by ${gameResult.maxHitPlayer} </div>
         <div>다시 하려면 준비 버튼을 눌러주세요. </div>
-        <button onclick="location.href='/';">홈으로</button>
+        <button id="returnHome">홈으로</button>
         `;
         document.getElementById('result').textContent = this.userName === gameResult.winner ? '이겼어요!' : '졌어요...';
         document.getElementById('readyButton').style.display = 'block';
+        const returnHomeButton = document.getElementById('returnHome');
+        returnHomeButton.addEventListener('click', () => {
+            this.leaveRoom();
+            socket.emit('fetchRoomStatus', this.roomName);
+            changeUrl('/');
+        });
     }
 
     showGameComponent() {
@@ -142,6 +154,7 @@ class Room {
         <div id="slider" style="position: absolute; width: 30px; height: 50px; background-color: #007bff;"></div>
         `;
         this.startSlider();
+        this.startTurnTimer();
     }
 
     startSlider() {
@@ -153,6 +166,27 @@ class Room {
         }
         this.sliderIntervalId = setInterval(moveSlider, 10);
         this.speedIntervalId = setInterval(changeSpeed, 1000);
+    }
+
+    startTurnTimer() {
+        if (this.turnTimerId !== null) {
+            clearTimeout(this.turnTimerId);
+        }
+
+        this.turnTimerId = setTimeout(() => {
+            this.endTurn();
+        }, 10000); // 10초 후 타이머 종료
+    }
+
+    endTurn() {
+        // 타이머 종료 로직 (대미지 값 0으로 턴 종료)
+        socket.emit('updateGameState', { roomName: this.roomName, currentPlayer: this.userName, hit: 0 });
+        this.hideSliderComponent();
+        const gameArea = document.querySelector('.slider-container');
+        gameArea.innerHTML = `
+        <div> damage : 0 </div>
+        `;
+        document.getElementById('hitSliderButton').style.display = 'none';
     }
 
     hitSlider() {
@@ -172,6 +206,7 @@ class Room {
         <div> damage : ${value} </div>
         `;
         document.getElementById('hitSliderButton').style.display = 'none';
+        clearTimeout(this.turnTimerId);
     }
 
     hideSliderComponent() {

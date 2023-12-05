@@ -19,9 +19,17 @@ export class SocketGateway implements OnGatewayConnection {
     @WebSocketServer()
     public server: Server;
 
+    private extractTokenFromHeader(cookie: string): string | undefined {
+        const tokens = cookie?.split('; ');
+        for (const token of tokens) {
+            if (token.startsWith('access_token=')) return token.split('=')[1];
+        }
+        return undefined;
+    }
+
     handleConnection(client: Socket) {
         try {
-            const tokenString: string = client.request.headers.cookie?.split('=')[1] as string;
+            const tokenString: string = this.extractTokenFromHeader(client.handshake.headers.cookie);
             const decodedToken = this.jwtService.verify(tokenString, {
                 secret: process.env.JWT_SECRET_KEY,
             });
@@ -95,6 +103,16 @@ export class SocketGateway implements OnGatewayConnection {
         this.logger.log(`Client ${client.id} called updateGameState()`);
         try {
             await this.socketService.updateGameState(this.server, client, payload);
+        } catch (e) {
+            this.logger.error(e);
+        }
+    }
+
+    @SubscribeMessage('fetchRoomStatus')
+    fetchRoomStatus(client: Socket, roomName: string): void {
+        this.logger.log(`Client ${client.id} called fetchRoomStatus()`);
+        try {
+            this.server.to(roomName).emit('updateRoomStatus', this.socketService.getRoomInfo(this.server, roomName));
         } catch (e) {
             this.logger.error(e);
         }

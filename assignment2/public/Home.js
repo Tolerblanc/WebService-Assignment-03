@@ -19,6 +19,8 @@ class Home {
     }
 
     initializeSocketListeners() {
+        socket.removeAllListeners();
+
         socket.off('updateRoomList');
         socket.on('updateRoomList', (rooms) => {
             this.updateRoomList(rooms);

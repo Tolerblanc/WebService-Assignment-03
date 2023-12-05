@@ -54,10 +54,8 @@
             }
 
             function submitForm() {
-                console.log('submitForm start');
                 const userId = document.getElementById('id').value;
                 const password = document.getElementById('pw1').value;
-                console.log(userId + password);
                 fetch('/auth/register', {
                     method: 'POST',
                     headers: {
@@ -66,7 +64,6 @@
                     body: JSON.stringify({ id: userId, password: password }),
                 })
                     .then((response) => {
-                        alert(response.status);
                         if (response.ok) {
                             return response.text();
                         } else if (response.status === 409) {
@@ -83,7 +80,6 @@
                         alert(`${error}`);
                         window.location.href = '/join';
                     });
-                console.log('submitForm end');
             }
 
             function updateSubmitButtonStatus() {

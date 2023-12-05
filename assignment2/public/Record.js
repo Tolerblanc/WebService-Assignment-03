@@ -29,7 +29,6 @@ class Record {
             `;
             })
             .catch((error) => {
-                console.log(error);
                 document.getElementById('record').innerHTML = '데이터를 불러오는 데 실패했습니다.';
             });
     }

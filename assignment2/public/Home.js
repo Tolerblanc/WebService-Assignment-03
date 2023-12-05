@@ -21,7 +21,6 @@ class Home {
     initializeSocketListeners() {
         socket.off('updateRoomList');
         socket.on('updateRoomList', (rooms) => {
-            console.log('updateRoomList listened');
             this.updateRoomList(rooms);
         });
 

@@ -2,7 +2,6 @@ import Home from './Home.js';
 import Record from './Record.js';
 import Room from './Room.js';
 import { io } from 'https://cdn.socket.io/4.7.2/socket.io.esm.min.js';
-import './Socket.js';
 
 export const socket = io();
 const $app = document.querySelector('.App');
@@ -42,14 +41,11 @@ export const changeUrl = (requestedUrl) => {
 window.addEventListener('click', (e) => {
     if (e.target.id === 'viewRecordButton') {
         changeUrl('/record');
-    } else if (e.target.id === 'createRoomButton') {
-        alert('방 생성 버튼 클릭');
     }
 });
 
 window.addEventListener('popstate', () => {
     const currentPath = window.location.pathname;
-    console.log('현재 페이지:', currentPath);
 
     // /room 페이지를 벗어났는지 확인
     if (!currentPath.startsWith('/room')) {

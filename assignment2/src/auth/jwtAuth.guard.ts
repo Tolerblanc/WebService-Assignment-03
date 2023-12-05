@@ -25,7 +25,10 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     private extractTokenFromHeader(request: Request): string | undefined {
-        const token = request.headers['cookie']?.split('=')[1];
-        return token ? token : undefined;
+        const tokens = request.headers['cookie']?.split('; ');
+        for (const token of tokens) {
+            if (token.startsWith('access_token=')) return token.split('=')[1];
+        }
+        return undefined;
     }
 }

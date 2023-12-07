@@ -47,7 +47,7 @@ export class SocketService {
         const readyStatus = Array.from(room).map((socketId) => this.isReady.has(socketId));
         const recordsPromises = Array.from(room).map(async (socketId) => {
             const rec = await this.userService.getRecords(this.clients.get(socketId));
-            return `${rec.wins}승 ${rec.losses}패`;
+            return `${rec.wins}승 ${rec.losses}패, 승률 ${((rec.wins / (rec.wins + rec.losses)) * 100).toFixed(2)}%    `;
         });
         const records = await Promise.all(recordsPromises);
         return {

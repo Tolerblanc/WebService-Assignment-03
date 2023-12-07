@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { ConnectedSocket, MessageBody, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { SocketService } from './socket.service';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
@@ -52,11 +52,11 @@ export class SocketGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('createRoom')
-    createRoom(client: Socket, roomName: string): void {
+    async createRoom(client: Socket, roomName: string) {
         this.logger.log(`Client ${client.id} called createRoom()`);
         try {
             const uniqueRoomName: string = roomName + ' by ' + client.id;
-            this.socketService.createRoom(this.server, client, uniqueRoomName);
+            await this.socketService.createRoom(this.server, client, uniqueRoomName);
             this.server.emit('updateRoomList', this.socketService.getRooms(this.server));
         } catch (e) {
             this.logger.error(e);
@@ -65,11 +65,12 @@ export class SocketGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('joinRoom')
-    joinRoom(client: Socket, roomName: string): void {
+    async joinRoom(client: Socket, roomName: string): Promise<void> {
         this.logger.log(`Client ${client.id} called joinRoom()`);
         try {
-            this.socketService.joinRoom(this.server, client, roomName);
+            await this.socketService.joinRoom(this.server, client, roomName);
             this.server.emit('updateRoomList', this.socketService.getRooms(this.server));
+            this.server.to(roomName).emit('welcome');
         } catch (e) {
             this.logger.error(e);
             client.emit('eventFailure', e.message);
@@ -89,7 +90,7 @@ export class SocketGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('changeReadyStatus')
-    changeReadyStatus(client: Socket, roomName: string): void {
+    async changeReadyStatus(client: Socket, roomName: string) {
         this.logger.log(`Client ${client.id} called changeReadyStatus()`);
         try {
             this.socketService.changeReadyStatus(this.server, client, roomName);
@@ -109,12 +110,27 @@ export class SocketGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('fetchRoomStatus')
-    fetchRoomStatus(client: Socket, roomName: string): void {
+    async fetchRoomStatus(client: Socket, roomName: string) {
         this.logger.log(`Client ${client.id} called fetchRoomStatus()`);
         try {
-            this.server.to(roomName).emit('updateRoomStatus', this.socketService.getRoomInfo(this.server, roomName));
+            this.server.to(roomName).emit('updateRoomStatus', await this.socketService.getRoomInfo(this.server, roomName));
         } catch (e) {
             this.logger.error(e);
         }
+    }
+
+    @SubscribeMessage('offer')
+    handleOffer(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
+        this.server.to(data.roomName).except(client.id).emit('offer', data.offer);
+    }
+
+    @SubscribeMessage('answer')
+    handleAnswer(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
+        this.server.to(data.roomName).except(client.id).emit('answer', data.answer);
+    }
+
+    @SubscribeMessage('ice')
+    handleIce(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
+        this.server.to(data.roomName).except(client.id).emit('ice', data.ice);
     }
 }

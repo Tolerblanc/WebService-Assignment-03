@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { Game } from './game.interface';
 import { UserService } from 'src/user/user.service';
+import { RecordDto } from 'src/user/record.dto';
 
 @Injectable()
 export class SocketService {
@@ -34,41 +35,49 @@ export class SocketService {
         return JSON.stringify(Array.from(roomList));
     }
 
-    createRoom(server: Server, client: Socket, roomName: string) {
+    async createRoom(server: Server, client: Socket, roomName: string) {
         client.join(roomName);
         client.emit('setUserName', this.clients.get(client.id));
-        server.to(roomName).emit('updateRoomStatus', this.getRoomInfo(server, roomName));
+        server.to(roomName).emit('updateRoomStatus', await this.getRoomInfo(server, roomName));
     }
 
-    getRoomInfo(server: Server, roomName: string) {
+    async getRoomInfo(server: Server, roomName: string) {
         const room = server.sockets.adapter.rooms.get(roomName);
         const players = Array.from(room).map((socketId) => this.clients.get(socketId));
         const readyStatus = Array.from(room).map((socketId) => this.isReady.has(socketId));
+        const recordsPromises = Array.from(room).map(async (socketId) => {
+            const rec = await this.userService.getRecords(this.clients.get(socketId));
+            return `${rec.wins}승 ${rec.losses}패`;
+        });
+        const records = await Promise.all(recordsPromises);
         return {
             roomName: roomName,
             players: players,
             readyStatus: readyStatus,
+            records: records,
         };
     }
 
-    joinRoom(server: Server, client: Socket, roomName: string) {
+    async joinRoom(server: Server, client: Socket, roomName: string) {
         const room = server.sockets.adapter.rooms.get(roomName);
         if (room === undefined || room.size <= 0) throw new Error('방이 존재하지 않습니다.');
         if (room.size >= 4) throw new Error('방이 가득차서 들어갈 수 없습니다.');
         client.join(roomName);
         client.emit('setUserName', this.clients.get(client.id));
-        server.to(roomName).emit('updateRoomStatus', this.getRoomInfo(server, roomName));
+        server.to(roomName).emit('updateRoomStatus', await this.getRoomInfo(server, roomName));
+        const records: RecordDto = await this.userService.getRecords(this.clients.get(client.id));
+        server.to(roomName).emit('newUserJoined', records);
     }
 
     leaveRoom(client: Socket, roomName: string) {
         client.leave(roomName);
     }
 
-    changeReadyStatus(server: Server, client: Socket, roomName: string) {
+    async changeReadyStatus(server: Server, client: Socket, roomName: string) {
         this.isReady.add(client.id);
         const players = server.sockets.adapter.rooms.get(roomName);
-        server.to(roomName).emit('updateRoomStatus', this.getRoomInfo(server, roomName));
-        if (players.size < 4) return; // TODO: 4명이 안되면 게임 시작 불가토록 수정 필요
+        server.to(roomName).emit('updateRoomStatus', await this.getRoomInfo(server, roomName));
+        if (players.size < 2) return; // TODO: 2명이 안되면 게임 시작 불가토록 수정 필요
         for (const socketId of players) {
             if (!this.isReady.has(socketId)) return;
         }
@@ -109,7 +118,7 @@ export class SocketService {
             await this.endGame(server, payload['currentPlayer'], payload['roomName']);
             return;
         }
-        currGame.turn = (currGame.turn + 1) % 4; // TODO : 4명으로 수정 필요
+        currGame.turn = (currGame.turn + 1) % 2; // TODO : 2명으로 수정 필요
         currGame.targetHP -= payload['hit'];
         currGame.lastHit = payload['hit'];
         currGame.lastHitPlayer = payload['currentPlayer'];
@@ -129,6 +138,6 @@ export class SocketService {
             maxHitPlayer: currGame.maxHitPlayer,
         };
         server.to(roomName).emit('endGame', gameResult);
-        server.to(roomName).emit('updateRoomStatus', this.getRoomInfo(server, roomName));
+        server.to(roomName).emit('updateRoomStatus', await this.getRoomInfo(server, roomName));
     }
 }

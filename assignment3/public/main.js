@@ -22,7 +22,7 @@ if (socket.connected) {
     });
 }
 
-export const changeUrl = (requestedUrl) => {
+export const changeUrl = async (requestedUrl) => {
     // history.pushState를 사용해 url을 변경한다.
     history.pushState(null, null, requestedUrl);
 
@@ -35,29 +35,30 @@ export const changeUrl = (requestedUrl) => {
         routes['/'].initializeSocketListeners();
     } else if (requestedUrl === '/room') {
         routes['/room'].initializeSocketListeners();
+        await routes['/room'].startMedia();
     }
 };
 
-window.addEventListener('click', (e) => {
+window.addEventListener('click', async (e) => {
     if (e.target.id === 'viewRecordButton') {
-        changeUrl('/record');
+        await changeUrl('/record');
     }
 });
 
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', async () => {
     const currentPath = window.location.pathname;
 
     // /room 페이지를 벗어났는지 확인
     if (!currentPath.startsWith('/room')) {
         routes['/room'].leaveRoom();
     }
-    changeUrl(currentPath);
+    await changeUrl(currentPath);
 });
 
-window.addEventListener('beforeunload', () => {
+window.addEventListener('beforeunload', async () => {
     if (window.location.pathname.startsWith('/room')) {
         // /room 페이지를 벗어날 때 필요한 작업
         routes['/room'].leaveRoom();
     }
-    changeUrl(window.location.pathname);
+    await changeUrl(window.location.pathname);
 });

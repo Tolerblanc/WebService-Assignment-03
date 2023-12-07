@@ -17,6 +17,10 @@ class Room {
         this.sliderIntervalId = null;
         this.speedIntervalId = null;
         this.turnTimerId = null;
+        this.myStream = null;
+        this.muted = false;
+        this.cameraOff = false;
+        this.myPeerConnection = null;
         this.initializeEventListeners();
     }
 
@@ -25,6 +29,20 @@ class Room {
             if (event.target.id === 'readyButton') {
                 socket.emit('changeReadyStatus', this.roomName);
                 readyButton.style.display = 'none';
+            }
+            if (event.target.id === 'mute') {
+                this.handleMuteClick();
+            }
+            if (event.target.id === 'camera') {
+                this.handleCameraClick();
+            }
+        });
+        document.addEventListener('input', (event) => {
+            if (event.target.id === 'cameras') {
+                this.handleCameraChange();
+            }
+            if (event.target.id === 'mics') {
+                this.handleMicChange();
             }
         });
     }
@@ -60,19 +78,48 @@ class Room {
             this.hideGameComponent();
             this.showResult(gameResult);
         });
+
+        socket.off('welcome');
+        socket.on('welcome', async () => {
+            await this.ensureMediaStreamInitialized();
+            await this.ensureConnectionInitialized();
+            const offer = await this.myPeerConnection.createOffer();
+            this.myPeerConnection.setLocalDescription(offer);
+            socket.emit('offer', offer, this.roomName);
+        });
+
+        socket.off('offer');
+        socket.on('offer', async (offer) => {
+            this.myPeerConnection.setRemoteDescription(offer);
+            const answer = await this.myPeerConnection.createAnswer();
+            this.myPeerConnection.setLocalDescription(answer);
+            socket.emit('answer', answer, this.roomName);
+        });
+
+        socket.off('answer');
+        socket.on('answer', (answer) => {
+            this.myPeerConnection.setRemoteDescription(answer);
+        });
+
+        socket.off('ice');
+        socket.on('ice', (ice) => {
+            this.myPeerConnection.addIceCandidate(ice);
+        });
     }
 
     updateRoomStatus(roomInfo) {
         this.roomName = roomInfo.roomName;
         document.getElementById('roomName').textContent = `Room : ${this.roomName}`;
-        for (let index = 1; index <= 4; index++) {
+        for (let index = 1; index <= 2; index++) {
             const playerElement = document.getElementById(`player${index}`);
             playerElement.querySelector('.playerName').textContent = '';
+            playerElement.querySelector('.record').textContent = '';
             playerElement.querySelector('.playerStatus').textContent = '';
         }
         roomInfo.players.forEach((player, index) => {
             const playerElement = document.getElementById(`player${index + 1}`);
             playerElement.querySelector('.playerName').textContent = player;
+            playerElement.querySelector('.record').textContent = `전적 : ${roomInfo.records[index]}`;
             playerElement.querySelector('.playerStatus').textContent = roomInfo.readyStatus[index] ? '준비 완료' : '대기중';
 
             // 자신의 준비 버튼 표시
@@ -114,10 +161,10 @@ class Room {
         document.getElementById('result').textContent = this.userName === gameResult.winner ? '이겼어요!' : '졌어요...';
         document.getElementById('readyButton').style.display = 'block';
         const returnHomeButton = document.getElementById('returnHome');
-        returnHomeButton.addEventListener('click', () => {
+        returnHomeButton.addEventListener('click', async () => {
             this.leaveRoom();
             socket.emit('fetchRoomStatus', this.roomName);
-            changeUrl('/');
+            await changeUrl('/');
         });
     }
 
@@ -226,23 +273,182 @@ class Room {
         }
     }
 
+    async getCameras() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const cameras = devices.filter((device) => device.kind === 'videoinput');
+            const currentCamera = this.myStream.getVideoTracks()[0];
+            const cameraSelect = document.getElementById('cameras');
+            cameras.forEach((camera) => {
+                const option = document.createElement('option');
+                option.value = camera.deviceId;
+                option.innerText = camera.label;
+                if (currentCamera.label == camera.label) {
+                    option.selected = true;
+                }
+                cameraSelect.appendChild(option);
+            });
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    async getMics() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const mics = devices.filter((device) => device.kind === 'audioinput');
+            const currentMic = this.myStream.getAudioTracks()[0];
+            const micSelect = document.getElementById('mics');
+            mics.forEach((mic) => {
+                const option = document.createElement('option');
+                option.value = mic.deviceId;
+                option.innerText = mic.label;
+                if (currentMic.label == mic.label) {
+                    option.selected = true;
+                }
+                micSelect.appendChild(option);
+            });
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    async getMedia(deviceId) {
+        const initialConstraints = {
+            audio: true,
+            video: { facingMode: 'user' },
+        };
+
+        const cameraConstraints = {
+            audio: true,
+            video: { deviceId: { exact: deviceId } },
+        };
+
+        try {
+            this.myStream = await navigator.mediaDevices.getUserMedia(deviceId ? cameraConstraints : initialConstraints);
+            const myFace = document.getElementById('myFace');
+            myFace.srcObject = this.myStream;
+            if (!deviceId) {
+                await this.getCameras();
+                await this.getMics();
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    handleMuteClick() {
+        const muteBtn = document.getElementById('mute');
+        this.myStream.getAudioTracks().forEach((track) => (track.enabled = !track.enabled));
+        if (!this.muted) {
+            muteBtn.innerText = 'Unmute';
+            this.muted = true;
+        } else {
+            muteBtn.innerText = 'Mute';
+            this.muted = false;
+        }
+    }
+
+    handleCameraClick() {
+        const cameraBtn = document.getElementById('camera');
+        this.myStream.getVideoTracks().forEach((track) => (track.enabled = !track.enabled));
+        if (!this.cameraOff) {
+            cameraBtn.innerText = 'Turn On Camera';
+            this.cameraOff = true;
+        } else {
+            cameraBtn.innerText = 'Turn Off Camera';
+            this.cameraOff = false;
+        }
+    }
+
+    async handleCameraChange() {
+        const cameraSelect = document.getElementById('cameras');
+        await this.getMedia(cameraSelect.value);
+        if (this.myPeerConnection) {
+            const videoTrack = this.myStream.getVideoTracks()[0];
+            const videoSender = this.myPeerConnection.getSenders().find((sender) => sender.track.kind === 'video');
+            videoSender.replaceTrack(videoTrack);
+        }
+    }
+
+    async handleMicChange() {
+        const micSelect = document.getElementById('mics');
+        await this.getMedia(micSelect.value);
+        if (this.myPeerConnection) {
+            const audioTrack = this.myStream.getAudioTracks()[0];
+            const audioSender = this.myPeerConnection.getSenders().find((sender) => sender.track.kind === 'audio');
+            audioSender.replaceTrack(audioTrack);
+        }
+    }
+
+    async startMedia() {
+        await this.getMedia();
+        await this.ensureConnectionInitialized();
+    }
+
+    async ensureMediaStreamInitialized() {
+        if (!this.myStream) {
+            await this.startMedia();
+        }
+    }
+
+    async ensureConnectionInitialized() {
+        if (!this.myPeerConnection) {
+            await this.makeConnection();
+        }
+    }
+
+    makeConnection() {
+        return new Promise((resolve) => {
+            this.myPeerConnection = new RTCPeerConnection({
+                iceServers: [
+                    {
+                        urls: ['stun:stun.stunprotocol.org'],
+                    },
+                ],
+            });
+            this.myPeerConnection.addEventListener('icecandidate', this.handleIce);
+            this.myPeerConnection.addEventListener('track', (event) => {
+                const peerFace = document.getElementById('peerFace');
+                if (peerFace.srcObject !== event.streams[0]) {
+                    peerFace.srcObject = event.streams[0];
+                }
+            });
+            this.myStream.getTracks().forEach((track) => this.myPeerConnection.addTrack(track, this.myStream));
+            resolve();
+        });
+    }
+
+    handleIce(data) {
+        socket.emit('ice', data.candidate, roomName);
+    }
+
+    handleAddStream(data) {
+        const peerFace = document.getElementById('peerFace');
+        peerFace.srcObject = data.stream;
+    }
+
     template() {
         return `
         <style>
-        .player {
-            margin-bottom: 10px;
-        }
-        
-        .video-container {
-            width: 160px;
-            height: 120px;
-            background-color: #000;
-        }
-        
-        video {
-            width: 100%;
-            height: auto;
-        }
+            .player {
+                margin-bottom: 10px;
+            }
+            
+            .video-container {
+                width: 160px;
+                height: 120px;
+                background-color: #000;
+            }
+            
+            video {
+                width: 100%;
+                height: auto;
+            }
+
+            .controls {
+                margin-top: 10px;
+            }
         </style>
         <h2 id="roomName">Room</h1>
         <!-- 게임 영역 -->
@@ -252,31 +458,32 @@ class Room {
 
         <!-- 플레이어 정보 영역 -->
         <div id="players">
-        <!-- 각 플레이어 정보가 들어갈 칸 -->
-        <div class="player" id="player1">
-        <span class="playerName"><!-- 플레이어 1의 이름 --></span> 
-        <span class="playerStatus"><!-- 준비 상태 --></span>
-        <div class="video-container" id="video1"><!-- 플레이어 1의 비디오 스트림 --></div>
+            <div class="player" id="player1">
+                <div class="playerName"></div>
+                <span class="record"></span> 
+                <span class="playerStatus"></span>
+                <div class="video-container">
+                    <video id="myFace" autoplay playsinline width="300" height="300"></video>
+                    <button id="mute">Mute</button> <button id="camera">Turn On Camera</button>
+                    <select id="mics"></select> <select id="cameras"></select>
+                </div>
+            </div>
+            <br>
+            <br>
+            <br>
+            <br>
+            <div class="player" id="player2">
+                <div class="playerName"></div>
+                <span class="record"></span>
+                <span class="playerStatus"></span>
+                <div class="video-container">
+                    <video id="peerFace" autoplay playsinline width="300" height="300"></video>
+                </div>
+            </div>
         </div>
-        <div class="player" id="player2">
-        <span class="playerName"><!-- 플레이어 2의 이름 --></span> 
-        <span class="playerStatus"><!-- 준비 상태 --></span>
-        <div class="video-container" id="video2"><!-- 플레이어 2의 비디오 스트림 --></div>
-        </div>
-        <div class="player" id="player3">
-        <span class="playerName"><!-- 플레이어 3의 이름 --></span> 
-        <span class="playerStatus"><!-- 준비 상태 --></span>
-        <div class="video-container" id="video3"><!-- 플레이어 3의 비디오 스트림 --></div>
-        </div>
-        <div class="player" id="player4">
-        <span class="playerName"><!-- 플레이어 4의 이름 --></span> 
-        <span class="playerStatus"><!-- 준비 상태 --></span>
-        <div class="video-container" id="video4"><!-- 플레이어 4의 비디오 스트림 --></div>
-        </div>
-    </div>
-
-    <!-- 자신의 준비 버튼 -->
-    <button id="readyButton">준비</button>
+        <br>
+        <!-- 준비 버튼 -->
+        <button id="readyButton">준비</button>
     `;
     }
 }

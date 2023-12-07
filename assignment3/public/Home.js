@@ -7,13 +7,13 @@ class Home {
     }
 
     initializeEventListeners() {
-        document.addEventListener('click', (event) => {
+        document.addEventListener('click', async (event) => {
             if (event.target.id === 'createRoomButton') {
                 this.openModal();
             } else if (event.target.id === 'closeModalButton') {
                 this.closeModal();
             } else if (event.target.id === 'emitRoomCreationButton') {
-                this.createRoom();
+                await this.createRoom();
             }
         });
     }
@@ -32,9 +32,9 @@ class Home {
         });
     }
 
-    createRoom() {
+    async createRoom() {
         socket.emit('createRoom', roomName.value);
-        changeUrl('/room');
+        await changeUrl('/room');
     }
 
     openModal() {
@@ -54,20 +54,20 @@ class Home {
             return;
         }
         roomMap?.forEach((count, roomName) => {
-            if (count === null || count == 0 || count >= 4) {
+            if (count === null || count == 0 || count >= 2) {
                 return;
             }
             const li = document.createElement('button');
-            li.textContent = `${roomName} (${count} / 4)`;
-            li.onclick = () => this.enterRoom(roomName); // 방 입장 이벤트 처리
+            li.textContent = `${roomName} (${count} / 2)`;
+            li.onclick = async () => await this.enterRoom(roomName);
             roomList.appendChild(li);
             roomList.appendChild(document.createElement('br'));
         });
     }
 
-    enterRoom(roomName) {
-        changeUrl('/room');
+    async enterRoom(roomName) {
         socket.emit('joinRoom', roomName);
+        await changeUrl('/room');
     }
 
     template() {

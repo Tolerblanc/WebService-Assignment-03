@@ -1,22 +1,14 @@
-# 2023-2-WebService-Assignment 2
+# 2023-2-WebService-Assignment 3
 
-## TODO
+## 구현 내용 요약
 
--   GET /users/records : JWT 토큰으로 전적 조회하는 API
--   gameResult.html : 승패 결과에 따라 다른 화면 출력
--   gameRoom.html : 게임 방 출력 (대기 + 게임 진행)
+-   과제 2 에서 일부 구현 추가
+-   대기방에서 WebRTC로 본인 카메라 / 마이크 사용 가능
+-   카메라 및 마이크 장치를 선택 가능하며, 버튼을 통해 스트림 토글 가능
+-   대기방에서 자신 / 상대방의 전적이 보임
 
-## Server-side emit events
+## 특이 사항
 
--   updateRoomList : 방 리스트 업데이트 시
--   startGame : 4명이 모두 준비 완료되었을 때 게임 시작
--   endGame : 병뚜껑 체력이 0일 때 게임 종료 (기록 갱신 후 승자, 패자 페이지로 이동)
--   updateGameState : 게임 상태 변경 (병뚜껑 체력 갱신 후 턴 변경 + 가장 높은 hit 출력)
-
-## Client-side emit events
-
--   createRoom : 방을 생성할 시
--   joinRoom : 방을 클릭해서 들어갈 시
--   leaveRoom : 방을 나오거나 방에 들어간 채로 접속이 끊길 시
--   changeReadyStatus : 준비 상태 변경
--   updateGameState : 게임 상태 변경 (현재 플레이어의 hit)
+-   상대방 스트림이 보이지 않음
+-   전적이 실시간으로 갱신됨
+-   짧게 테스트하기 위해서 병뚜껑 체력을 100으로 설정하고, 게임 인원을 2인으로 변경함.

@@ -95,7 +95,7 @@ export class SocketService {
         const game: Game = {
             players: players,
             turn: 0,
-            targetHP: 1000,
+            targetHP: 100,
             maxHit: 0,
             maxHitPlayer: '',
             lastHit: 0,
